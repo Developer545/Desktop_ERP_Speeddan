@@ -8,8 +8,17 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') })
 const express = require('express')
 const cors = require('cors')
 const rateLimit = require('express-rate-limit')
-const { v4: uuidv4 } = require('uuid')
-const { addDays, isAfter } = require('date-fns')
+const crypto = require('crypto')
+
+// Helpers de fecha (reemplazan date-fns para compatibilidad CommonJS en Vercel)
+function addDays(date, days) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+function isAfter(dateA, dateB) {
+  return new Date(dateA) > new Date(dateB)
+}
 const bcrypt = require('bcryptjs')
 const cookieParser = require('cookie-parser')
 const jwt = require('jsonwebtoken')
@@ -194,7 +203,7 @@ app.post('/api/licenses/generate', requireAuth, async (req, res) => {
   if (!duration_days)
     return res.status(400).json({ error: 'Especifica una cantidad de días válida (1-36500).' })
 
-  const raw = uuidv4().replace(/-/g, '').toUpperCase()
+  const raw = crypto.randomUUID().replace(/-/g, '').toUpperCase()
   const license_key = `SPEED-${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`
 
   try {
