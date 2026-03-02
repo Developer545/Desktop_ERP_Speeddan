@@ -392,6 +392,47 @@
   </div>
 </div>
 
+<!-- MODAL CAMBIAR CONTRASEÑA -->
+<div class="modal-overlay hidden" id="changePassModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary)">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <span class="modal-title">Cambiar contraseña</span>
+    </div>
+    <p class="modal-desc">
+      Ingresa tu contraseña actual y la nueva. La nueva contraseña debe tener:<br>
+      <span style="font-size:11px;color:var(--text-muted);">
+        ≥ 8 caracteres, mayúscula, minúscula, número y carácter especial (!@#$%...)
+      </span>
+    </p>
+    <div class="form-group" style="margin-bottom:10px">
+      <label class="form-label">Contraseña actual</label>
+      <input class="form-input" id="cpCurrent" type="password" placeholder="••••••••" />
+    </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label class="form-label">Nueva contraseña</label>
+      <input class="form-input" id="cpNew" type="password" placeholder="Mínimo 8 caracteres" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirmar nueva contraseña</label>
+      <input class="form-input" id="cpConfirm" type="password" placeholder="Repetir nueva contraseña" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('changePassModal')">Cancelar</button>
+      <button class="btn btn-primary" id="confirmChangePassBtn" onclick="changePassword()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Cambiar
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- LOGIN OVERLAY -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
@@ -444,6 +485,12 @@
           <div class="name" id="sidebarUser">admin</div>
           <div class="role">Administrador</div>
         </div>
+        <button class="btn-icon" title="Cambiar contraseña" onclick="document.getElementById('changePassModal').classList.remove('hidden')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </button>
         <button class="btn-icon" title="Cerrar sesión" onclick="logout()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -984,8 +1031,37 @@ document.getElementById('confirmExtendBtn').addEventListener('click', async () =
   pendingExtendId = null;
 });
 
+/* ─── CAMBIAR CONTRASEÑA ────────────────────────── */
+async function changePassword() {
+  const curr = document.getElementById('cpCurrent').value;
+  const newP = document.getElementById('cpNew').value;
+  const conf = document.getElementById('cpConfirm').value;
+
+  if (!curr || !newP || !conf) return toast('Completa todos los campos', 'error');
+  if (newP !== conf) return toast('Las contraseñas nuevas no coinciden', 'error');
+  if (newP.length < 8) return toast('Mínimo 8 caracteres', 'error');
+
+  try {
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: curr, newPassword: newP })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      toast('Contraseña actualizada correctamente', 'success');
+      closeModal('changePassModal');
+      document.getElementById('cpCurrent').value = '';
+      document.getElementById('cpNew').value = '';
+      document.getElementById('cpConfirm').value = '';
+    } else {
+      toast(data.error || 'Error al cambiar contraseña', 'error');
+    }
+  } catch { toast('Error de conexión', 'error'); }
+}
+
 /* ─── CERRAR MODALES AL HACER CLIC FUERA ─────────── */
-['revokeModal','extendModal'].forEach(id => {
+['revokeModal','extendModal','changePassModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal(id);
   });

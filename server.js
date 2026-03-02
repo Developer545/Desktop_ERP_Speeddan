@@ -149,6 +149,51 @@ app.get('/api/auth/check', requireAuth, (req, res) => {
 })
 
 // ══════════════════════════════════════════════════════════
+// CAMBIAR CONTRASEÑA
+// ══════════════════════════════════════════════════════════
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  const currentPassword = sanitizeStr(req.body.currentPassword, 128)
+  const newPassword = sanitizeStr(req.body.newPassword, 128)
+
+  if (!currentPassword || !newPassword)
+    return res.status(400).json({ error: 'Contraseña actual y nueva son requeridas' })
+
+  // Validar fortaleza de la nueva contraseña
+  if (newPassword.length < 8)
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' })
+  if (!/[A-Z]/.test(newPassword))
+    return res.status(400).json({ error: 'La contraseña debe incluir al menos una mayúscula' })
+  if (!/[a-z]/.test(newPassword))
+    return res.status(400).json({ error: 'La contraseña debe incluir al menos una minúscula' })
+  if (!/[0-9]/.test(newPassword))
+    return res.status(400).json({ error: 'La contraseña debe incluir al menos un número' })
+  if (!/[!@#$%^&*()_+\-=[\]{};':"|,.<>/?]/.test(newPassword))
+    return res.status(400).json({ error: 'La contraseña debe incluir al menos un carácter especial' })
+
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM admin_users WHERE id = $1', [req.user.id]
+    )
+    const user = rows[0]
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' })
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash)
+    if (!isMatch) return res.status(401).json({ error: 'Contraseña actual incorrecta' })
+
+    const newHash = await bcrypt.hash(newPassword, 12)
+    await pool.query(
+      'UPDATE admin_users SET password_hash = $1 WHERE id = $2',
+      [newHash, user.id]
+    )
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente' })
+  } catch (err) {
+    console.error('[auth/change-password]', err.message)
+    res.status(500).json({ error: 'Error al cambiar la contraseña' })
+  }
+})
+
+// ══════════════════════════════════════════════════════════
 // ESTADÍSTICAS DEL DASHBOARD
 // ══════════════════════════════════════════════════════════
 app.get('/api/licenses/stats', requireAuth, async (_req, res) => {
