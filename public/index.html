@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speeddansys — Panel de Licencias</title>
+  <style>
+    :root {
+      --bg:           #0d1117;
+      --surface:      #161b22;
+      --surface-2:    #1c2128;
+      --border:       #30363d;
+      --border-light: #21262d;
+      --text:         #e6edf3;
+      --text-sec:     #8b949e;
+      --text-muted:   #6e7681;
+      --primary:      #1677ff;
+      --primary-bg:   rgba(22,119,255,.12);
+      --success:      #3fb950;
+      --success-bg:   rgba(63,185,80,.12);
+      --warning:      #d29922;
+      --warning-bg:   rgba(210,153,34,.12);
+      --danger:       #f85149;
+      --danger-bg:    rgba(248,81,73,.12);
+      --purple:       #bc8cff;
+      --purple-bg:    rgba(188,140,255,.12);
+      --radius:       8px;
+      --radius-sm:    4px;
+      --shadow:       0 4px 20px rgba(0,0,0,.5);
+      --tr:           .17s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system,'Segoe UI',system-ui,sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── LAYOUT ─────────────────────────────── */
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: fixed; top:0; left:0; bottom:0; z-index:100;
+    }
+    .sidebar-logo {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .sidebar-logo .brand { font-size:15px; font-weight:700; color:var(--text); }
+    .sidebar-logo .brand span { color:var(--primary); }
+    .sidebar-logo .sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+    .sidebar-nav { flex:1; padding:12px 8px; }
+    .nav-item {
+      display:flex; align-items:center; gap:10px;
+      padding:9px 12px; border-radius:var(--radius-sm);
+      color:var(--text-sec); font-size:13px; cursor:pointer;
+      transition: background var(--tr), color var(--tr);
+    }
+    .nav-item.active, .nav-item:hover { background:var(--primary-bg); color:var(--primary); }
+    .nav-item svg { width:16px; height:16px; flex-shrink:0; }
+
+    .sidebar-footer { padding:12px; border-top:1px solid var(--border-light); }
+    .user-pill { display:flex; align-items:center; gap:10px; padding:8px 10px; }
+    .user-avatar {
+      width:28px; height:28px; border-radius:50%; background:var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; font-weight:700; color:#fff; flex-shrink:0;
+    }
+    .user-info { flex:1; min-width:0; }
+    .user-info .name { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-info .role { font-size:11px; color:var(--text-muted); }
+    .btn-icon {
+      background:none; border:none; cursor:pointer;
+      color:var(--text-muted); padding:4px; border-radius:4px;
+      display:flex; align-items:center; justify-content:center;
+      transition: color var(--tr), background var(--tr);
+    }
+    .btn-icon:hover { color:var(--danger); background:var(--danger-bg); }
+    .btn-icon svg { width:15px; height:15px; }
+
+    .main { margin-left:220px; flex:1; display:flex; flex-direction:column; }
+
+    .topbar {
+      height:52px; background:var(--surface);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 24px; position:sticky; top:0; z-index:50;
+    }
+    .topbar-title { font-size:15px; font-weight:600; color:var(--text); }
+    .topbar-actions { display:flex; gap:8px; align-items:center; }
+
+    .content { padding:24px; }
+
+    /* ── ALERTA VENCIMIENTO PRÓXIMO ──────────── */
+    .alert-banner {
+      display:flex; align-items:flex-start; gap:12px;
+      padding:14px 18px;
+      background: rgba(210,153,34,.08);
+      border:1px solid rgba(210,153,34,.3);
+      border-left:4px solid var(--warning);
+      border-radius:var(--radius);
+      margin-bottom:16px;
+      animation: fadeIn .3s ease;
+    }
+    .alert-banner svg { width:18px; height:18px; color:var(--warning); flex-shrink:0; margin-top:1px; }
+    .alert-banner-body { flex:1; }
+    .alert-banner-title { font-size:13px; font-weight:600; color:var(--warning); }
+    .alert-banner-list { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+    .alert-chip {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:3px 10px; border-radius:20px; font-size:12px;
+      background:var(--warning-bg); color:var(--warning);
+      border:1px solid rgba(210,153,34,.25);
+    }
+    .alert-chip.urgent { background:var(--danger-bg); color:var(--danger); border-color:rgba(248,81,73,.25); }
+
+    /* ── KPI GRID ────────────────────────────── */
+    .kpi-grid {
+      display:grid; grid-template-columns:repeat(5,1fr);
+      gap:12px; margin-bottom:20px;
+    }
+    .kpi-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:16px 18px;
+      display:flex; align-items:center; gap:14px;
+    }
+    .kpi-card.warn-card { border-color:rgba(210,153,34,.4); }
+    .kpi-icon {
+      width:38px; height:38px; border-radius:var(--radius);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .kpi-icon svg { width:19px; height:19px; }
+    .kpi-icon.blue   { background:var(--primary-bg);  color:var(--primary);  }
+    .kpi-icon.green  { background:var(--success-bg);  color:var(--success);  }
+    .kpi-icon.gold   { background:var(--warning-bg);  color:var(--warning);  }
+    .kpi-icon.red    { background:var(--danger-bg);   color:var(--danger);   }
+    .kpi-icon.orange { background:rgba(251,140,0,.14); color:#fb8c00; }
+    .kpi-value { font-size:26px; font-weight:700; line-height:1.1; color:var(--text); }
+    .kpi-label { font-size:12px; color:var(--text-sec); margin-top:2px; }
+
+    /* ── CARD ────────────────────────────────── */
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .card-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px; border-bottom:1px solid var(--border-light);
+    }
+    .card-title { font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px; }
+    .card-title svg { width:15px; height:15px; color:var(--text-sec); }
+    .card-body { padding:18px; }
+
+    /* ── FORMULARIO ──────────────────────────── */
+    .form-grid {
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr 160px auto;
+      gap:12px; align-items:end;
+    }
+    .form-grid-2 {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px; margin-top:12px;
+    }
+    .form-group { display:flex; flex-direction:column; gap:5px; }
+    .form-label { font-size:12px; font-weight:500; color:var(--text-sec); }
+    .form-input {
+      padding:7px 10px; background:var(--bg);
+      border:1px solid var(--border); border-radius:var(--radius-sm);
+      color:var(--text); font-size:13px; width:100%; outline:none;
+      transition: border-color var(--tr), box-shadow var(--tr);
+    }
+    .form-input:focus { border-color:var(--primary); box-shadow:0 0 0 2px rgba(22,119,255,.2); }
+    .form-input::placeholder { color:var(--text-muted); }
+
+    /* ── BOTONES ─────────────────────────────── */
+    .btn {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:7px 14px; border-radius:var(--radius-sm); border:none;
+      cursor:pointer; font-size:13px; font-weight:500; white-space:nowrap;
+      transition: filter var(--tr), opacity var(--tr);
+    }
+    .btn:hover   { filter:brightness(1.1); }
+    .btn:active  { filter:brightness(.9); }
+    .btn:disabled { opacity:.5; cursor:not-allowed; filter:none; }
+    .btn svg { width:14px; height:14px; flex-shrink:0; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-success { background:var(--success); color:#fff; }
+    .btn-danger  { background:var(--danger);  color:#fff; }
+    .btn-warning { background:var(--warning); color:#fff; }
+    .btn-ghost   { background:transparent; color:var(--text-sec); border:1px solid var(--border); }
+    .btn-ghost:hover { color:var(--text); border-color:var(--text-sec); }
+    .btn-sm { padding:4px 10px; font-size:12px; }
+
+    /* ── TABLA ───────────────────────────────── */
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; }
+    thead tr { border-bottom:1px solid var(--border); }
+    th {
+      padding:10px 12px; text-align:left; font-size:11px; font-weight:600;
+      text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); white-space:nowrap;
+    }
+    tbody tr { border-bottom:1px solid var(--border-light); transition:background var(--tr); }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:rgba(255,255,255,.02); }
+    /* filas coloreadas por urgencia */
+    tbody tr.row-urgent  { border-left:3px solid var(--danger);  background:rgba(248,81,73,.04); }
+    tbody tr.row-warning { border-left:3px solid var(--warning); background:rgba(210,153,34,.04); }
+    td { padding:10px 12px; font-size:13px; vertical-align:middle; }
+
+    /* ── BADGES ──────────────────────────────── */
+    .badge {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; line-height:1;
+    }
+    .badge::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.8; }
+    .badge-active  { background:var(--success-bg); color:var(--success); }
+    .badge-pending { background:var(--warning-bg); color:var(--warning); }
+    .badge-expired { background:var(--danger-bg);  color:var(--danger); }
+
+    /* ── DÍAS RESTANTES BAR ──────────────────── */
+    .days-bar { margin-top:4px; height:3px; background:var(--border); border-radius:2px; width:100%; max-width:80px; }
+    .days-fill { height:100%; border-radius:2px; transition:width .4s; }
+
+    /* ── CÓDIGO LICENCIA ─────────────────────── */
+    .code {
+      font-family:'Consolas','Fira Code',monospace;
+      font-size:12px; background:var(--surface-2,#1c2128);
+      border:1px solid var(--border-light); border-radius:3px;
+      padding:2px 7px; color:var(--primary); cursor:pointer; user-select:all;
+      transition:background var(--tr);
+    }
+    .code:hover { background:var(--primary-bg); }
+
+    .text-sec   { color:var(--text-sec); }
+    .text-muted { color:var(--text-muted); font-size:11px; }
+
+    /* ── EMPTY STATE ─────────────────────────── */
+    .empty-state { padding:48px 24px; text-align:center; }
+    .empty-state svg { width:40px; height:40px; color:var(--text-muted); margin-bottom:12px; }
+    .empty-state p { color:var(--text-sec); font-size:13px; }
+
+    /* ── TOASTS ──────────────────────────────── */
+    .toast-container { position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+    .toast {
+      display:flex; align-items:center; gap:10px;
+      padding:12px 16px; background:var(--surface-2,#1c2128);
+      border:1px solid var(--border); border-radius:var(--radius);
+      box-shadow:var(--shadow); font-size:13px; min-width:260px;
+      animation:slideIn .22s ease;
+    }
+    .toast svg { width:16px; height:16px; flex-shrink:0; }
+    .toast.success { border-left:3px solid var(--success); }
+    .toast.success svg { color:var(--success); }
+    .toast.error   { border-left:3px solid var(--danger); }
+    .toast.error   svg { color:var(--danger); }
+    .toast.info    { border-left:3px solid var(--primary); }
+    .toast.info    svg { color:var(--primary); }
+    @keyframes slideIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes fadeOut { to{opacity:0;transform:translateX(110%)} }
+    @keyframes fadeIn  { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── LOGIN OVERLAY ───────────────────────── */
+    .login-overlay {
+      position:fixed; inset:0; background:var(--bg);
+      display:flex; align-items:center; justify-content:center; z-index:200;
+    }
+    .login-box {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:36px 32px;
+      width:100%; max-width:380px; box-shadow:var(--shadow);
+    }
+    .login-brand { text-align:center; margin-bottom:28px; }
+    .login-brand .icon-wrap {
+      width:52px; height:52px; background:var(--primary-bg);
+      border:1px solid rgba(22,119,255,.3); border-radius:12px;
+      display:flex; align-items:center; justify-content:center; margin:0 auto 12px;
+    }
+    .login-brand .icon-wrap svg { width:26px; height:26px; color:var(--primary); }
+    .login-brand h2 { font-size:18px; font-weight:700; color:var(--text); }
+    .login-brand p  { font-size:12px; color:var(--text-sec); margin-top:4px; }
+    .login-form .form-group { margin-bottom:14px; }
+    .login-btn {
+      width:100%; padding:9px; margin-top:8px; font-size:14px;
+      border-radius:var(--radius-sm); background:var(--primary);
+      color:#fff; border:none; cursor:pointer; font-weight:600;
+      transition:filter var(--tr);
+    }
+    .login-btn:hover { filter:brightness(1.1); }
+    .login-error { color:var(--danger); font-size:12px; text-align:center; min-height:18px; margin-top:10px; }
+
+    /* ── MODALES ─────────────────────────────── */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.65);
+      display:flex; align-items:center; justify-content:center; z-index:300;
+    }
+    .modal-box {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:24px; width:360px; box-shadow:var(--shadow);
+    }
+    .modal-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .modal-header svg { width:18px; height:18px; }
+    .modal-header.danger svg { color:var(--danger); }
+    .modal-header.warning svg { color:var(--warning); }
+    .modal-title { font-size:15px; font-weight:600; }
+    .modal-desc  { font-size:13px; color:var(--text-sec); margin-bottom:20px; line-height:1.55; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+    /* ── MISC ────────────────────────────────── */
+    .hidden  { display:none !important; }
+    .spinner {
+      width:16px; height:16px; border:2px solid var(--border);
+      border-top-color:var(--primary); border-radius:50%;
+      animation:spin .7s linear infinite; display:inline-block;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .section-mb { margin-bottom:16px; }
+
+    .actions-cell { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+
+    @media(max-width:1200px){ .kpi-grid{ grid-template-columns:repeat(3,1fr); } }
+    @media(max-width:900px) { .kpi-grid{ grid-template-columns:1fr 1fr; } .form-grid{ grid-template-columns:1fr 1fr; } }
+    @media(max-width:640px) { .sidebar{display:none} .main{margin-left:0} .kpi-grid{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- MODAL REVOCAR -->
+<div class="modal-overlay hidden" id="revokeModal">
+  <div class="modal-box">
+    <div class="modal-header danger">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+        <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+      <span class="modal-title">Revocar licencia</span>
+    </div>
+    <p class="modal-desc">
+      Esto eliminará la licencia del servidor. El cliente quedará bloqueado
+      la próxima vez que intente activar o al reiniciar su sistema.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('revokeModal')">Cancelar</button>
+      <button class="btn btn-danger" id="confirmRevokeBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+        </svg>
+        Revocar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXTENDER -->
+<div class="modal-overlay hidden" id="extendModal">
+  <div class="modal-box">
+    <div class="modal-header warning">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span class="modal-title">Extender licencia</span>
+    </div>
+    <p class="modal-desc" id="extendModalDesc">
+      Agrega días adicionales a la licencia. Si ya expiró, se reactivará desde hoy.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Días adicionales a agregar</label>
+      <input class="form-input" id="extendDays" type="number" min="1" value="15"
+             placeholder="Ej: 15" style="max-width:180px;" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('extendModal')">Cancelar</button>
+      <button class="btn btn-warning" id="confirmExtendBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Extender
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <h2>Speeddansys</h2>
+      <p>Panel de Administración de Licencias</p>
+    </div>
+    <form class="login-form" id="loginForm" autocomplete="off">
+      <div class="form-group">
+        <label class="form-label">Usuario</label>
+        <input class="form-input" id="loginUser" type="text" placeholder="admin" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input class="form-input" id="loginPass" type="password" placeholder="••••••••" required />
+      </div>
+      <button class="login-btn" type="submit">Iniciar Sesión</button>
+      <div class="login-error" id="loginError"></div>
+    </form>
+  </div>
+</div>
+
+<!-- LAYOUT PRINCIPAL -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">Speed<span>dansys</span></div>
+      <div class="sub">Panel de Licencias</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Licencias
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar" id="sidebarAvatar">A</div>
+        <div class="user-info">
+          <div class="name" id="sidebarUser">admin</div>
+          <div class="role">Administrador</div>
+        </div>
+        <button class="btn-icon" title="Cerrar sesión" onclick="logout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <span class="topbar-title">Gestión de Licencias</span>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="fetchAll()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Actualizar
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Banner alertas vencimiento próximo -->
+      <div id="alertBanner" class="hidden"></div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid section-mb">
+        <div class="kpi-card">
+          <div class="kpi-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="kpiTotal">—</div>
+            <div class="kpi-label">Total Emitidas</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="kpiActive">—</div>
+            <div class="kpi-label">Activas</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon gold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="kpiPending">—</div>
+            <div class="kpi-label">Sin activar</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="kpiExpired">—</div>
+            <div class="kpi-label">Expiradas</div>
+          </div>
+        </div>
+        <div class="kpi-card warn-card">
+          <div class="kpi-icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="kpiSoon">—</div>
+            <div class="kpi-label">Vencen pronto</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario Generar -->
+      <div class="card section-mb">
+        <div class="card-header">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            Generar Nueva Licencia
+          </span>
+        </div>
+        <div class="card-body">
+          <form id="generateForm">
+            <!-- Fila 1: datos de contacto + días -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Nombre del cliente</label>
+                <input class="form-input" id="clientName" type="text" placeholder="Empresa o nombre" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Correo electrónico</label>
+                <input class="form-input" id="clientEmail" type="email" placeholder="correo@empresa.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teléfono</label>
+                <input class="form-input" id="clientPhone" type="text" placeholder="7000-0000" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Duración (días)</label>
+                <input class="form-input" id="durationDays" type="number" min="1" value="15" required />
+              </div>
+            </div>
+            <!-- Fila 2: usuario inicial (opcional) + botón -->
+            <div class="form-grid" style="margin-top:8px;align-items:flex-end;">
+              <div class="form-group">
+                <label class="form-label">Usuario inicial ERP <span class="text-muted">(opcional)</span></label>
+                <input class="form-input" id="initUsername" type="text" placeholder="admin" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contraseña inicial ERP <span class="text-muted">(opcional)</span></label>
+                <input class="form-input" id="initPassword" type="text" placeholder="Admin123!" />
+              </div>
+              <div style="padding-bottom:1px;">
+                <button class="btn btn-success" type="submit" id="generateBtn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  Generar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla Licencias -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="9" y1="21" x2="9" y2="9"/>
+            </svg>
+            Licencias Emitidas
+          </span>
+          <span class="text-muted" id="tableCount"></span>
+        </div>
+        <div class="table-wrap" id="tableWrap">
+          <div class="empty-state">
+            <div class="spinner"></div>
+            <p style="margin-top:12px">Cargando…</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+/* ─── UTILS ─────────────────────────────────────── */
+const ICONS = {
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  x:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+  info:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+};
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `${ICONS[type === 'success' ? 'check' : type === 'error' ? 'x' : 'info']}<span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => { el.style.animation = 'fadeOut .3s ease forwards'; setTimeout(() => el.remove(), 300); }, 3400);
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text)
+    .then(()  => toast('Clave copiada al portapapeles', 'success'))
+    .catch(()  => toast('No se pudo copiar', 'error'));
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-SV', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function daysLeft(iso) {
+  if (!iso) return null;
+  return Math.ceil((new Date(iso) - new Date()) / 86400000);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+/* ─── AUTH ───────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', checkAuth);
+
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/check');
+    if (r.ok) {
+      const d = await r.json();
+      showDashboard(d.user.username);
+      fetchAll();
+    } else { showLogin(); }
+  } catch { showLogin(); }
+}
+
+function showLogin() { document.getElementById('loginOverlay').classList.remove('hidden'); }
+function hideLogin() { document.getElementById('loginOverlay').classList.add('hidden'); }
+
+function showDashboard(username) {
+  hideLogin();
+  if (username) {
+    document.getElementById('sidebarUser').textContent   = username;
+    document.getElementById('sidebarAvatar').textContent = username[0].toUpperCase();
+  }
+}
+
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const loginError = document.getElementById('loginError');
+  loginError.textContent = '';
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  try {
+    const r = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const d = await r.json();
+    if (r.ok) { showDashboard(d.username || username); fetchAll(); }
+    else { loginError.textContent = d.error || 'Credenciales incorrectas'; }
+  } catch { loginError.textContent = 'Error de conexión'; }
+});
+
+async function logout() {
+  await fetch('/api/auth/logout', { method:'POST' }).catch(() => {});
+  showLogin();
+  document.getElementById('tableWrap').innerHTML = '<div class="empty-state"><p>Sesión cerrada</p></div>';
+  document.getElementById('alertBanner').classList.add('hidden');
+  ['kpiTotal','kpiActive','kpiPending','kpiExpired','kpiSoon'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+}
+
+/* ─── FETCH DATA ─────────────────────────────────── */
+async function fetchAll() {
+  await Promise.all([fetchStats(), fetchLicenses()]);
+}
+
+async function fetchStats() {
+  try {
+    const r = await fetch('/api/licenses/stats');
+    if (!r.ok) { if (r.status === 401) showLogin(); return; }
+    const d = await r.json();
+    document.getElementById('kpiTotal').textContent   = d.total      ?? 0;
+    document.getElementById('kpiActive').textContent  = d.activas    ?? 0;
+    document.getElementById('kpiPending').textContent = d.pendientes ?? 0;
+    document.getElementById('kpiExpired').textContent = d.expiradas  ?? 0;
+    document.getElementById('kpiSoon').textContent    = d.vencen_pronto ?? 0;
+  } catch {}
+}
+
+async function fetchLicenses() {
+  try {
+    const r = await fetch('/api/licenses');
+    if (!r.ok) { if (r.status === 401) showLogin(); return; }
+    const list = await r.json();
+    document.getElementById('tableCount').textContent =
+      list.length ? `${list.length} registro${list.length > 1 ? 's' : ''}` : '';
+    renderAlertBanner(list);
+    renderTable(list);
+  } catch {
+    document.getElementById('tableWrap').innerHTML =
+      '<div class="empty-state"><p>Error al cargar las licencias.</p></div>';
+  }
+}
+
+/* ─── BANNER ALERTAS ─────────────────────────────── */
+function renderAlertBanner(list) {
+  const banner = document.getElementById('alertBanner');
+  const expiring = list.filter(l => {
+    if (!l.is_active || !l.expiration_date) return false;
+    const d = daysLeft(l.expiration_date);
+    return d !== null && d > 0 && d <= 5;
+  });
+
+  if (expiring.length === 0) { banner.classList.add('hidden'); return; }
+
+  const chips = expiring.map(l => {
+    const d = daysLeft(l.expiration_date);
+    const urgent = d <= 2;
+    const name = l.client_name || l.license_key.slice(-8);
+    return `<span class="alert-chip ${urgent ? 'urgent' : ''}">${name} — ${d}d</span>`;
+  }).join('');
+
+  banner.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <div class="alert-banner-body">
+      <div class="alert-banner-title">
+        ${expiring.length} licencia${expiring.length > 1 ? 's' : ''} vence${expiring.length > 1 ? 'n' : ''} en los próximos 5 días — contacta a estos clientes
+      </div>
+      <div class="alert-banner-list">${chips}</div>
+    </div>`;
+  banner.className = 'alert-banner';
+}
+
+/* ─── RENDER TABLA ───────────────────────────────── */
+function renderTable(list) {
+  const wrap = document.getElementById('tableWrap');
+
+  if (list.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <p>No hay licencias. Genera la primera arriba.</p>
+      </div>`;
+    return;
+  }
+
+  const rows = list.map(lic => {
+    const left     = daysLeft(lic.expiration_date);
+    const expired  = lic.is_active && left !== null && left <= 0;
+    const urgent   = lic.is_active && left !== null && left > 0 && left <= 2;
+    const warning  = lic.is_active && left !== null && left > 2 && left <= 5;
+    const rowClass = urgent ? 'row-urgent' : warning ? 'row-warning' : '';
+
+    // Badge estado
+    let badge = '';
+    if (expired)         badge = '<span class="badge badge-expired">Expirada</span>';
+    else if (lic.is_active) badge = '<span class="badge badge-active">Activa</span>';
+    else                    badge = '<span class="badge badge-pending">Sin activar</span>';
+
+    // Barra de días restantes
+    let daysHtml = '—';
+    if (lic.expiration_date) {
+      if (expired) {
+        daysHtml = `<span style="color:var(--danger);font-size:12px">Vencida</span>`;
+      } else {
+        const pct   = Math.min(100, Math.max(0, (left / lic.duration_days) * 100));
+        const color = left <= 2 ? 'var(--danger)' : left <= 5 ? 'var(--warning)' : 'var(--success)';
+        daysHtml = `
+          <div style="font-size:12px;font-weight:600;">${left}d restantes</div>
+          <div class="days-bar"><div class="days-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="text-muted">${formatDate(lic.expiration_date)}</div>`;
+      }
+    } else if (!lic.is_active) {
+      daysHtml = `<span class="text-muted">${lic.duration_days}d al activar</span>`;
+    }
+
+    // Contacto
+    const contact = [
+      lic.client_email ? `<div style="font-size:12px">${lic.client_email}</div>` : '',
+      lic.client_phone ? `<div class="text-muted">${lic.client_phone}</div>` : '',
+    ].join('') || '<span class="text-muted">—</span>';
+
+    const hwid = lic.hardware_id
+      ? `<span style="font-family:monospace;font-size:11px;color:var(--text-muted)">${lic.hardware_id.slice(0,12)}…</span>`
+      : '<span class="text-muted">—</span>';
+
+    const initUser = lic.initial_username
+      ? `<div style="font-size:12px;font-weight:500;color:var(--primary)">${lic.initial_username}</div>
+         <div class="text-muted" style="font-size:11px">${lic.initial_password || '(sin contraseña)'}</div>`
+      : '<span class="text-muted" style="font-size:12px">admin / Admin123!</span>';
+
+    return `<tr class="${rowClass}">
+      <td>
+        <span class="code" onclick="copyText('${lic.license_key}')" title="Clic para copiar">
+          ${lic.license_key}
+        </span>
+      </td>
+      <td>
+        ${lic.client_name ? `<div style="font-weight:500">${lic.client_name}</div>` : '<span class="text-muted">—</span>'}
+        ${contact}
+      </td>
+      <td>${initUser}</td>
+      <td>${badge}</td>
+      <td>${daysHtml}</td>
+      <td>${hwid}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-warning btn-sm" onclick="openExtendModal(${lic.id},'${(lic.client_name||'').replace(/'/g,"\\'")}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Extender
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="openRevokeModal(${lic.id})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+            </svg>
+            Revocar
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Clave de Licencia</th>
+          <th>Cliente / Contacto</th>
+          <th>Usuario ERP</th>
+          <th>Estado</th>
+          <th>Vencimiento</th>
+          <th>Hardware ID</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+/* ─── GENERAR LICENCIA ───────────────────────────── */
+document.getElementById('generateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('generateBtn');
+  const duration = parseInt(document.getElementById('durationDays').value);
+  if (!duration || duration < 1) { toast('Ingresa una duración válida', 'error'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generando…';
+
+  try {
+    const r = await fetch('/api/licenses/generate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        duration_days:    duration,
+        client_name:      document.getElementById('clientName').value.trim()    || undefined,
+        client_email:     document.getElementById('clientEmail').value.trim()   || undefined,
+        client_phone:     document.getElementById('clientPhone').value.trim()   || undefined,
+        initial_username: document.getElementById('initUsername').value.trim()  || undefined,
+        initial_password: document.getElementById('initPassword').value.trim()  || undefined,
+      })
+    });
+    if (r.status === 401) { showLogin(); return; }
+    const d = await r.json();
+    if (r.ok) {
+      toast(`Licencia generada: ${d.data.license_key}`, 'success');
+      document.getElementById('clientName').value    = '';
+      document.getElementById('clientEmail').value   = '';
+      document.getElementById('clientPhone').value   = '';
+      document.getElementById('durationDays').value  = '15';
+      document.getElementById('initUsername').value  = '';
+      document.getElementById('initPassword').value  = '';
+      fetchAll();
+    } else { toast(d.error || 'Error al generar', 'error'); }
+  } catch { toast('Error de conexión', 'error'); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Generar`;
+  }
+});
+
+/* ─── REVOCAR ────────────────────────────────────── */
+let pendingRevokeId = null;
+
+function openRevokeModal(id) {
+  pendingRevokeId = id;
+  document.getElementById('revokeModal').classList.remove('hidden');
+}
+
+document.getElementById('confirmRevokeBtn').addEventListener('click', async () => {
+  if (!pendingRevokeId) return;
+  const id = pendingRevokeId;
+  closeModal('revokeModal');
+  try {
+    const r = await fetch(`/api/licenses/${id}`, { method:'DELETE' });
+    if (r.status === 401) { showLogin(); return; }
+    if (r.ok) { toast('Licencia revocada correctamente', 'success'); fetchAll(); }
+    else { const d = await r.json(); toast(d.error || 'Error al revocar', 'error'); }
+  } catch { toast('Error de conexión', 'error'); }
+  pendingRevokeId = null;
+});
+
+/* ─── EXTENDER ───────────────────────────────────── */
+let pendingExtendId = null;
+
+function openExtendModal(id, clientName) {
+  pendingExtendId = id;
+  document.getElementById('extendDays').value = '15';
+  document.getElementById('extendModalDesc').textContent =
+    clientName
+      ? `Agrega días adicionales a la licencia de "${clientName}". Si ya expiró, se reactivará desde hoy.`
+      : 'Agrega días adicionales a esta licencia. Si ya expiró, se reactivará desde hoy.';
+  document.getElementById('extendModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('extendDays').focus(), 100);
+}
+
+document.getElementById('confirmExtendBtn').addEventListener('click', async () => {
+  if (!pendingExtendId) return;
+  const extra = parseInt(document.getElementById('extendDays').value);
+  if (!extra || extra < 1) { toast('Ingresa un número de días válido', 'error'); return; }
+
+  const id = pendingExtendId;
+  closeModal('extendModal');
+
+  try {
+    const r = await fetch(`/api/licenses/${id}/extend`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ extra_days: extra })
+    });
+    if (r.status === 401) { showLogin(); return; }
+    const d = await r.json();
+    if (r.ok) { toast(`+${extra} días agregados correctamente`, 'success'); fetchAll(); }
+    else { toast(d.error || 'Error al extender', 'error'); }
+  } catch { toast('Error de conexión', 'error'); }
+  pendingExtendId = null;
+});
+
+/* ─── CERRAR MODALES AL HACER CLIC FUERA ─────────── */
+['revokeModal','extendModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal(id);
+  });
+});
+</script>
+</body>
+</html>
