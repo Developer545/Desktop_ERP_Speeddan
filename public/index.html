@@ -323,6 +323,25 @@
     @keyframes spin { to{transform:rotate(360deg)} }
     .section-mb { margin-bottom:16px; }
 
+    /* ── SECCIÓN EMPRESAS WEB ─────────────────── */
+    .section-wrap { display:none; }
+    .section-wrap.active { display:block; }
+    .badge-prueba      { background:rgba(22,119,255,.12); color:var(--primary); }
+    .badge-activa      { background:var(--success-bg);   color:var(--success); }
+    .badge-suspendida  { background:var(--danger-bg);    color:var(--danger);  }
+    .badge-cancelada   { background:rgba(110,118,129,.12); color:var(--text-muted); }
+    .badge-emprendedor { background:rgba(22,119,255,.12); color:var(--primary); }
+    .badge-empresarial { background:var(--success-bg);   color:var(--success); }
+    .badge-corporativo { background:var(--purple-bg);    color:var(--purple);  }
+    .empresa-form-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; }
+    .modulo-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:3px; }
+    .modulo-chip {
+      display:inline-flex; align-items:center;
+      padding:2px 7px; border-radius:10px; font-size:10px; font-weight:600;
+      background:var(--primary-bg); color:var(--primary);
+      border:1px solid rgba(22,119,255,.2);
+    }
+
     .actions-cell { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 
     @media(max-width:1200px){ .kpi-grid{ grid-template-columns:repeat(3,1fr); } }
@@ -433,6 +452,86 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR EMPRESA -->
+<div class="modal-overlay hidden" id="editEmpresaModal">
+  <div class="modal-box" style="width:420px;">
+    <div class="modal-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary)">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      <span class="modal-title" id="editEmpresaTitle">Editar Empresa</span>
+    </div>
+    <p class="modal-desc">Modifica el plan, estado, módulos y vigencia de la empresa.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Plan</label>
+        <select class="form-input" id="editEPlan">
+          <option value="emprendedor">🚀 Emprendedor</option>
+          <option value="empresarial">💼 Empresarial</option>
+          <option value="corporativo_cloud">☁️ Corp. Cloud</option>
+          <option value="corporativo_local">🏢 Corp. Local</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Estado</label>
+        <select class="form-input" id="editEEstado">
+          <option value="prueba">🔵 Prueba</option>
+          <option value="activa">🟢 Activa</option>
+          <option value="suspendida">🔴 Suspendida</option>
+          <option value="cancelada">⚫ Cancelada</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Max usuarios</label>
+        <input class="form-input" id="editEMaxUsuarios" type="number" min="1" max="200" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Días adicionales</label>
+        <input class="form-input" id="editEDiasExtra" type="number" min="0" placeholder="0 = sin cambio" />
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:10px;">
+      <label class="form-label">URL Base de datos <span class="text-muted">(enterprise)</span></label>
+      <input class="form-input" id="editEDatabaseUrl" type="text" placeholder="postgresql://..." />
+    </div>
+    <div class="form-group" style="margin-top:10px;">
+      <label class="form-label">Notas internas</label>
+      <input class="form-input" id="editENotas" type="text" placeholder="Observaciones..." />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('editEmpresaModal')">Cancelar</button>
+      <button class="btn btn-primary" id="saveEmpresaBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Guardar cambios
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TOGGLE ESTADO EMPRESA -->
+<div class="modal-overlay hidden" id="toggleEstadoModal">
+  <div class="modal-box">
+    <div class="modal-header warning">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span class="modal-title">Cambiar estado</span>
+    </div>
+    <p class="modal-desc" id="toggleEstadoDesc">¿Confirmar cambio de estado?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('toggleEstadoModal')">Cancelar</button>
+      <button class="btn btn-warning" id="confirmToggleBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOGIN OVERLAY -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
@@ -471,11 +570,18 @@
       <div class="sub">Panel de Licencias</div>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item active">
+      <div class="nav-item active" id="nav-licencias" onclick="showSection('licencias')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
-        Licencias
+        Licencias Desktop
+      </div>
+      <div class="nav-item" id="nav-empresas" onclick="showSection('empresas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        Empresas Web
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -505,7 +611,7 @@
   <!-- Main -->
   <main class="main">
     <div class="topbar">
-      <span class="topbar-title">Gestión de Licencias</span>
+      <span class="topbar-title" id="topbarTitle">Gestión de Licencias</span>
       <div class="topbar-actions">
         <button class="btn btn-ghost btn-sm" onclick="fetchAll()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -517,7 +623,7 @@
       </div>
     </div>
 
-    <div class="content">
+    <div class="content section-wrap active" id="section-licencias">
 
       <!-- Banner alertas vencimiento próximo -->
       <div id="alertBanner" class="hidden"></div>
@@ -601,11 +707,34 @@
         </div>
         <div class="card-body">
           <form id="generateForm">
-            <!-- Fila 1: datos de contacto + días -->
+            <!-- Fila 1: Datos de empresa (multi-tenant) -->
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label">Nombre del cliente</label>
-                <input class="form-input" id="clientName" type="text" placeholder="Empresa o nombre" />
+                <label class="form-label">Nombre empresa <span style="color:var(--danger)">*</span></label>
+                <input class="form-input" id="empresaNombre" type="text" placeholder="ABC, S.A. de C.V." required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">NIT empresa</label>
+                <input class="form-input" id="empresaNit" type="text" placeholder="0614-000000-000-0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">URL Base de datos Neon <span style="color:var(--danger)">*</span></label>
+                <input class="form-input" id="databaseUrl" type="text" placeholder="postgresql://user:pass@neon.tech/dbname" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Plan</label>
+                <select class="form-input" id="planType">
+                  <option value="basico">Basico</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            </div>
+            <!-- Fila 2: datos de contacto + días -->
+            <div class="form-grid" style="margin-top:8px;">
+              <div class="form-group">
+                <label class="form-label">Contacto</label>
+                <input class="form-input" id="clientName" type="text" placeholder="Nombre del contacto" />
               </div>
               <div class="form-group">
                 <label class="form-label">Correo electrónico</label>
@@ -620,7 +749,7 @@
                 <input class="form-input" id="durationDays" type="number" min="1" value="15" required />
               </div>
             </div>
-            <!-- Fila 2: usuario inicial (opcional) + botón -->
+            <!-- Fila 3: usuario inicial + max usuarios + botón -->
             <div class="form-grid" style="margin-top:8px;align-items:flex-end;">
               <div class="form-group">
                 <label class="form-label">Usuario inicial ERP <span class="text-muted">(opcional)</span></label>
@@ -629,6 +758,10 @@
               <div class="form-group">
                 <label class="form-label">Contraseña inicial ERP <span class="text-muted">(opcional)</span></label>
                 <input class="form-input" id="initPassword" type="text" placeholder="Admin123!" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Max usuarios</label>
+                <input class="form-input" id="maxUsers" type="number" min="1" max="100" value="3" />
               </div>
               <div style="padding-bottom:1px;">
                 <button class="btn btn-success" type="submit" id="generateBtn">
@@ -664,7 +797,206 @@
         </div>
       </div>
 
-    </div>
+    </div><!-- /section-licencias -->
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- SECTION: EMPRESAS WEB                          -->
+    <!-- ══════════════════════════════════════════════ -->
+    <div class="content section-wrap" id="section-empresas">
+
+      <!-- KPIs Empresas -->
+      <div class="kpi-grid section-mb">
+        <div class="kpi-card">
+          <div class="kpi-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="eKpiTotal">—</div>
+            <div class="kpi-label">Total Empresas</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="eKpiPrueba">—</div>
+            <div class="kpi-label">En Prueba</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="eKpiActivas">—</div>
+            <div class="kpi-label">Activas</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="eKpiSuspendidas">—</div>
+            <div class="kpi-label">Suspendidas</div>
+          </div>
+        </div>
+        <div class="kpi-card warn-card">
+          <div class="kpi-icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <div class="kpi-value" id="eKpiVencen">—</div>
+            <div class="kpi-label">Vencen pronto</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario Nueva Empresa -->
+      <div class="card section-mb">
+        <div class="card-header">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            Nueva Empresa Web
+          </span>
+        </div>
+        <div class="card-body">
+          <form id="createEmpresaForm">
+            <!-- Fila 1: identificación -->
+            <div class="empresa-form-grid">
+              <div class="form-group">
+                <label class="form-label">Nombre empresa <span style="color:var(--danger)">*</span></label>
+                <input class="form-input" id="eNombre" type="text" placeholder="Mi Empresa, S.A." required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Subdominio <span style="color:var(--danger)">*</span></label>
+                <input class="form-input" id="eSubdominio" type="text" placeholder="miempresa" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">NIT</label>
+                <input class="form-input" id="eNit" type="text" placeholder="0614-000000-000-0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email contacto <span style="color:var(--danger)">*</span></label>
+                <input class="form-input" id="eEmail" type="email" placeholder="contacto@empresa.com" required />
+              </div>
+            </div>
+            <!-- Fila 2: plan y suscripción -->
+            <div class="empresa-form-grid" style="margin-top:10px;">
+              <div class="form-group">
+                <label class="form-label">Plan</label>
+                <select class="form-input" id="ePlan">
+                  <option value="emprendedor">🚀 Emprendedor</option>
+                  <option value="empresarial">💼 Empresarial</option>
+                  <option value="corporativo_cloud">☁️ Corporativo Cloud</option>
+                  <option value="corporativo_local">🏢 Corporativo Local</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Estado inicial</label>
+                <select class="form-input" id="eEstado">
+                  <option value="prueba">🔵 Prueba</option>
+                  <option value="activa">🟢 Activa</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Días de vigencia <span style="color:var(--danger)">*</span></label>
+                <input class="form-input" id="eDias" type="number" min="1" value="15" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Max usuarios</label>
+                <input class="form-input" id="eMaxUsuarios" type="number" min="1" max="200" value="3" />
+              </div>
+            </div>
+            <!-- Fila 3: contacto y extras -->
+            <div class="empresa-form-grid" style="margin-top:10px;">
+              <div class="form-group">
+                <label class="form-label">Nombre contacto</label>
+                <input class="form-input" id="eContactoNombre" type="text" placeholder="Juan Pérez" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teléfono</label>
+                <input class="form-input" id="eContactoTel" type="text" placeholder="7000-0000" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">URL Base de datos <span class="text-muted">(enterprise)</span></label>
+                <input class="form-input" id="eDatabaseUrl" type="text" placeholder="postgresql://..." />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Notas internas</label>
+                <input class="form-input" id="eNotas" type="text" placeholder="Observaciones..." />
+              </div>
+            </div>
+            <!-- Fila 4: credenciales admin ERP -->
+            <div class="empresa-form-grid" style="margin-top:10px;">
+              <div class="form-group">
+                <label class="form-label">Usuario admin ERP <span style="color:var(--danger)">*</span></label>
+                <input class="form-input" id="eUsername" type="text" placeholder="admin" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contraseña admin ERP <span style="color:var(--danger)">*</span></label>
+                <input class="form-input" id="ePassword" type="text" placeholder="Admin123!" required />
+              </div>
+              <div></div>
+              <div style="display:flex;align-items:flex-end;">
+                <button class="btn btn-success" type="submit" id="createEmpresaBtn" style="width:100%;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                  </svg>
+                  Crear Empresa
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla Empresas -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="9" y1="21" x2="9" y2="9"/>
+            </svg>
+            Empresas Registradas
+          </span>
+          <span class="text-muted" id="eTableCount"></span>
+        </div>
+        <div class="table-wrap" id="eTableWrap">
+          <div class="empty-state">
+            <div class="spinner"></div>
+            <p style="margin-top:12px">Cargando…</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /section-empresas -->
+
   </main>
 </div>
 
@@ -756,8 +1088,24 @@ async function logout() {
   });
 }
 
+/* ─── SECTION SWITCHING ──────────────────────────── */
+let currentSection = 'licencias';
+
+function showSection(name) {
+  currentSection = name;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + name).classList.add('active');
+  document.querySelectorAll('.section-wrap').forEach(el => el.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  const titles = { licencias: 'Gestión de Licencias', empresas: 'Empresas Web' };
+  document.getElementById('topbarTitle').textContent = titles[name] || name;
+  if (name === 'licencias') fetchAll();
+  if (name === 'empresas')  fetchAllEmpresas();
+}
+
 /* ─── FETCH DATA ─────────────────────────────────── */
 async function fetchAll() {
+  if (currentSection === 'empresas') { fetchAllEmpresas(); return; }
   await Promise.all([fetchStats(), fetchLicenses()]);
 }
 
@@ -881,12 +1229,22 @@ function renderTable(list) {
          <div class="text-muted" style="font-size:11px">${lic.initial_password || '(sin contraseña)'}</div>`
       : '<span class="text-muted" style="font-size:12px">admin / Admin123!</span>';
 
+    // ── Empresa / NIT ──────────────────────────────────────
+    const empresaHtml = lic.empresa_nombre
+      ? `<div style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${lic.empresa_nombre}">${lic.empresa_nombre}</div>
+         <div class="text-muted" style="font-size:11px;font-family:monospace">${lic.empresa_nit || '—'}</div>
+         <span style="font-size:10px;padding:1px 5px;border-radius:3px;background:var(--primary-bg);color:var(--primary);display:inline-block;margin-top:2px">
+           ${lic.plan || 'basico'} · max ${lic.max_users || 3}u
+         </span>`
+      : '<span class="text-muted" style="font-size:12px">Sin empresa</span>';
+
     return `<tr class="${rowClass}">
       <td>
         <span class="code" onclick="copyText('${lic.license_key}')" title="Clic para copiar">
           ${lic.license_key}
         </span>
       </td>
+      <td>${empresaHtml}</td>
       <td>
         ${lic.client_name ? `<div style="font-weight:500">${lic.client_name}</div>` : '<span class="text-muted">—</span>'}
         ${contact}
@@ -921,6 +1279,7 @@ function renderTable(list) {
       <thead>
         <tr>
           <th>Clave de Licencia</th>
+          <th>Empresa / NIT</th>
           <th>Cliente / Contacto</th>
           <th>Usuario ERP</th>
           <th>Estado</th>
@@ -953,18 +1312,28 @@ document.getElementById('generateForm').addEventListener('submit', async e => {
         client_phone:     document.getElementById('clientPhone').value.trim()   || undefined,
         initial_username: document.getElementById('initUsername').value.trim()  || undefined,
         initial_password: document.getElementById('initPassword').value.trim()  || undefined,
+        empresa_nombre:   document.getElementById('empresaNombre').value.trim() || undefined,
+        empresa_nit:      document.getElementById('empresaNit').value.trim()    || undefined,
+        database_url:     document.getElementById('databaseUrl').value.trim()   || undefined,
+        plan:             document.getElementById('planType').value             || 'basico',
+        max_users:        parseInt(document.getElementById('maxUsers').value)   || 3,
       })
     });
     if (r.status === 401) { showLogin(); return; }
     const d = await r.json();
     if (r.ok) {
       toast(`Licencia generada: ${d.data.license_key}`, 'success');
+      document.getElementById('empresaNombre').value = '';
+      document.getElementById('empresaNit').value    = '';
+      document.getElementById('databaseUrl').value   = '';
+      document.getElementById('planType').value      = 'basico';
       document.getElementById('clientName').value    = '';
       document.getElementById('clientEmail').value   = '';
       document.getElementById('clientPhone').value   = '';
       document.getElementById('durationDays').value  = '15';
-      document.getElementById('initUsername').value  = '';
-      document.getElementById('initPassword').value  = '';
+      document.getElementById('initUsername').value   = '';
+      document.getElementById('initPassword').value   = '';
+      document.getElementById('maxUsers').value       = '3';
       fetchAll();
     } else { toast(d.error || 'Error al generar', 'error'); }
   } catch { toast('Error de conexión', 'error'); }
@@ -1061,10 +1430,302 @@ async function changePassword() {
 }
 
 /* ─── CERRAR MODALES AL HACER CLIC FUERA ─────────── */
-['revokeModal','extendModal','changePassModal'].forEach(id => {
+['revokeModal','extendModal','changePassModal','editEmpresaModal','toggleEstadoModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal(id);
   });
+});
+
+/* ══════════════════════════════════════════════════
+   EMPRESAS WEB — lógica completa
+   ══════════════════════════════════════════════════ */
+
+const PLAN_META = {
+  emprendedor:       { label:'Emprendedor',   cls:'badge-emprendedor', icon:'🚀' },
+  empresarial:       { label:'Empresarial',   cls:'badge-empresarial', icon:'💼' },
+  corporativo_cloud: { label:'Corp. Cloud',   cls:'badge-corporativo', icon:'☁️' },
+  corporativo_local: { label:'Corp. Local',   cls:'badge-corporativo', icon:'🏢' },
+};
+const ESTADO_META = {
+  prueba:     { label:'Prueba',     cls:'badge-prueba'     },
+  activa:     { label:'Activa',     cls:'badge-activa'     },
+  suspendida: { label:'Suspendida', cls:'badge-suspendida' },
+  cancelada:  { label:'Cancelada',  cls:'badge-cancelada'  },
+};
+
+async function fetchEmpresasStats() {
+  try {
+    const r = await fetch('/api/empresas/stats');
+    if (r.status === 401) { showLogin(); return; }
+    const d = await r.json();
+    if (r.ok) {
+      document.getElementById('eKpiTotal').textContent      = d.total        ?? 0;
+      document.getElementById('eKpiPrueba').textContent     = d.en_prueba    ?? 0;
+      document.getElementById('eKpiActivas').textContent    = d.activas      ?? 0;
+      document.getElementById('eKpiSuspendidas').textContent= d.suspendidas  ?? 0;
+      document.getElementById('eKpiVencen').textContent     = d.vencen_pronto?? 0;
+    }
+  } catch {}
+}
+
+async function fetchEmpresas() {
+  try {
+    const r = await fetch('/api/empresas');
+    if (r.status === 401) { showLogin(); return; }
+    const rows = await r.json();
+    if (r.ok) renderEmpresasTable(rows);
+    else document.getElementById('eTableWrap').innerHTML =
+      `<div class="empty-state"><p>${rows.error || 'Error al cargar empresas'}</p></div>`;
+  } catch {
+    document.getElementById('eTableWrap').innerHTML =
+      '<div class="empty-state"><p>Error de conexión</p></div>';
+  }
+}
+
+function fetchAllEmpresas() {
+  fetchEmpresasStats();
+  fetchEmpresas();
+}
+
+function renderEmpresasTable(rows) {
+  const wrap = document.getElementById('eTableWrap');
+  document.getElementById('eTableCount').textContent =
+    rows.length ? `${rows.length} empresa${rows.length !== 1 ? 's' : ''}` : '';
+
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;color:var(--text-muted);margin-bottom:12px;">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <p>No hay empresas registradas aún. Crea la primera arriba.</p>
+    </div>`;
+    return;
+  }
+
+  const now = new Date();
+
+  const rowsHtml = rows.map(e => {
+    const plan = PLAN_META[e.plan]   || { label: e.plan,   cls:'badge-pending', icon:'?' };
+    const est  = ESTADO_META[e.estado] || { label: e.estado, cls:'badge-pending' };
+
+    // Vencimiento
+    const vc = e.fecha_vencimiento ? new Date(e.fecha_vencimiento) : null;
+    let vencHtml = '<span class="text-muted">Sin vencimiento</span>';
+    if (vc) {
+      const diff = Math.ceil((vc - now) / 86400000);
+      const ds   = vc.toLocaleDateString('es-SV', { day:'2-digit', month:'short', year:'2-digit' });
+      if (diff < 0)       vencHtml = `<span style="color:var(--danger);font-size:12px;">⚠ ${ds}</span>`;
+      else if (diff <= 5) vencHtml = `<span style="color:var(--warning);font-size:12px;">⏰ ${ds} (${diff}d)</span>`;
+      else                vencHtml = `<span style="font-size:12px;">${ds}</span>`;
+    }
+
+    // Módulos
+    const mods = typeof e.modulos === 'object' && e.modulos ? e.modulos : {};
+    const actives = Object.keys(mods).filter(k => mods[k]);
+    const shown   = actives.slice(0, 4);
+    const extra   = actives.length > 4 ? `<span class="modulo-chip">+${actives.length - 4}</span>` : '';
+    const modulosHtml = shown.length
+      ? `<div class="modulo-chips">${shown.map(m => `<span class="modulo-chip">${m}</span>`).join('')}${extra}</div>`
+      : '<span class="text-muted">—</span>';
+
+    const rowClass = e.estado === 'suspendida' ? 'row-urgent' : e.estado === 'prueba' ? 'row-warning' : '';
+
+    const toggleBtn = e.estado === 'suspendida'
+      ? `<button class="btn btn-success btn-sm" onclick="openToggleModal(${e.id},'${escHtml(e.nombre)}','${e.estado}')">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+           Activar
+         </button>`
+      : `<button class="btn btn-warning btn-sm" onclick="openToggleModal(${e.id},'${escHtml(e.nombre)}','${e.estado}')">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+           Suspender
+         </button>`;
+
+    return `<tr class="${rowClass}">
+      <td>
+        <div style="font-weight:600;font-size:13px;">${escHtml(e.nombre)}</div>
+        ${e.subdominio
+          ? `<div style="margin-top:3px;"><code style="background:var(--primary-bg);padding:1px 7px;border-radius:3px;font-size:10px;color:var(--primary);">${e.subdominio}.speeddansys.com</code></div>`
+          : '<div class="text-muted" style="font-size:11px;">sin subdominio</div>'}
+        ${e.contacto_email ? `<div class="text-muted" style="font-size:11px;margin-top:1px;">${escHtml(e.contacto_email)}</div>` : ''}
+      </td>
+      <td><span class="badge ${plan.cls}">${plan.icon} ${plan.label}</span></td>
+      <td><span class="badge ${est.cls}">${est.label}</span></td>
+      <td>${modulosHtml}</td>
+      <td>${vencHtml}</td>
+      <td style="font-size:13px;text-align:center;">${e.max_usuarios ?? 3}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-ghost btn-sm" onclick="openEditEmpresaModal(${e.id})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Editar
+          </button>
+          ${toggleBtn}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>Empresa / Subdominio</th>
+      <th>Plan</th>
+      <th>Estado</th>
+      <th>Módulos activos</th>
+      <th>Vencimiento</th>
+      <th style="text-align:center;">Max usuarios</th>
+      <th>Acciones</th>
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>`;
+}
+
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─── CREAR EMPRESA ──────────────────────────────── */
+document.getElementById('createEmpresaForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('createEmpresaBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Creando...';
+
+  const data = {
+    nombre:            document.getElementById('eNombre').value.trim(),
+    subdominio:        document.getElementById('eSubdominio').value.trim().toLowerCase(),
+    nit:               document.getElementById('eNit').value.trim() || null,
+    contacto_email:    document.getElementById('eEmail').value.trim(),
+    plan:              document.getElementById('ePlan').value,
+    estado:            document.getElementById('eEstado').value,
+    dias:              parseInt(document.getElementById('eDias').value) || 15,
+    max_usuarios:      parseInt(document.getElementById('eMaxUsuarios').value) || 3,
+    contacto_nombre:   document.getElementById('eContactoNombre').value.trim() || null,
+    contacto_telefono: document.getElementById('eContactoTel').value.trim() || null,
+    database_url:      document.getElementById('eDatabaseUrl').value.trim() || null,
+    notas:             document.getElementById('eNotas').value.trim() || null,
+    username:          document.getElementById('eUsername').value.trim(),
+    password:          document.getElementById('ePassword').value.trim(),
+  };
+
+  try {
+    const r = await fetch('/api/empresas', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data),
+    });
+    if (r.status === 401) { showLogin(); return; }
+    const d = await r.json();
+    if (r.ok && d.success) {
+      toast(`Empresa "${data.nombre}" creada correctamente`, 'success');
+      if (d.provisioning?.erp_error)   toast(`⚠ ERP: ${d.provisioning.erp_error}`, 'info');
+      if (d.provisioning?.email_error) toast('⚠ Email de bienvenida no enviado', 'info');
+      document.getElementById('createEmpresaForm').reset();
+      document.getElementById('eDias').value = '15';
+      document.getElementById('eMaxUsuarios').value = '3';
+      fetchAllEmpresas();
+    } else {
+      toast(d.error || 'Error al crear empresa', 'error');
+    }
+  } catch { toast('Error de conexión', 'error'); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Crear Empresa`;
+  }
+});
+
+/* ─── EDITAR EMPRESA ─────────────────────────────── */
+let editEmpresaId = null;
+let empresasCache = [];
+
+async function openEditEmpresaModal(id) {
+  editEmpresaId = id;
+  try {
+    // Usa caché si está disponible, si no recarga
+    let empresa = empresasCache.find(e => e.id === id);
+    if (!empresa) {
+      const r = await fetch('/api/empresas');
+      if (r.status === 401) { showLogin(); return; }
+      empresasCache = await r.json();
+      empresa = empresasCache.find(e => e.id === id);
+    }
+    if (!empresa) { toast('Empresa no encontrada', 'error'); return; }
+
+    document.getElementById('editEmpresaTitle').textContent = empresa.nombre;
+    document.getElementById('editEPlan').value         = empresa.plan         || 'emprendedor';
+    document.getElementById('editEEstado').value       = empresa.estado       || 'activa';
+    document.getElementById('editEMaxUsuarios').value  = empresa.max_usuarios || 3;
+    document.getElementById('editEDiasExtra').value    = '';
+    document.getElementById('editEDatabaseUrl').value  = empresa.database_url || '';
+    document.getElementById('editENotas').value        = empresa.notas        || '';
+    document.getElementById('editEmpresaModal').classList.remove('hidden');
+  } catch { toast('Error al cargar datos', 'error'); }
+}
+
+document.getElementById('saveEmpresaBtn').addEventListener('click', async () => {
+  if (!editEmpresaId) return;
+  const diasExtra = parseInt(document.getElementById('editEDiasExtra').value) || 0;
+  const data = {
+    plan:         document.getElementById('editEPlan').value,
+    estado:       document.getElementById('editEEstado').value,
+    max_usuarios: parseInt(document.getElementById('editEMaxUsuarios').value) || 3,
+    database_url: document.getElementById('editEDatabaseUrl').value.trim() || null,
+    notas:        document.getElementById('editENotas').value.trim() || null,
+    ...(diasExtra > 0 && { dias_extra: diasExtra }),
+  };
+  try {
+    const r = await fetch(`/api/empresas/${editEmpresaId}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data),
+    });
+    if (r.status === 401) { showLogin(); return; }
+    const d = await r.json();
+    if (r.ok && d.success) {
+      toast('Empresa actualizada correctamente', 'success');
+      closeModal('editEmpresaModal');
+      empresasCache = [];
+      fetchAllEmpresas();
+    } else { toast(d.error || 'Error al actualizar', 'error'); }
+  } catch { toast('Error de conexión', 'error'); }
+});
+
+/* ─── TOGGLE ESTADO EMPRESA ──────────────────────── */
+let pendingToggleId = null;
+let pendingToggleEstado = null;
+
+function openToggleModal(id, nombre, estadoActual) {
+  pendingToggleId = id;
+  pendingToggleEstado = estadoActual;
+  const activar = estadoActual === 'suspendida';
+  document.getElementById('toggleEstadoDesc').textContent = activar
+    ? `¿Activar la empresa "${nombre}"? El ERP quedará disponible para sus usuarios.`
+    : `¿Suspender "${nombre}"? El ERP bloqueará el acceso de sus usuarios inmediatamente.`;
+  const btn = document.getElementById('confirmToggleBtn');
+  btn.textContent = activar ? '✓ Activar' : '⏸ Suspender';
+  btn.className   = activar ? 'btn btn-success' : 'btn btn-warning';
+  document.getElementById('toggleEstadoModal').classList.remove('hidden');
+}
+
+document.getElementById('confirmToggleBtn').addEventListener('click', async () => {
+  if (!pendingToggleId) return;
+  const nuevoEstado = pendingToggleEstado === 'suspendida' ? 'activa' : 'suspendida';
+  closeModal('toggleEstadoModal');
+  try {
+    const r = await fetch(`/api/empresas/${pendingToggleId}`, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ estado: nuevoEstado }),
+    });
+    if (r.status === 401) { showLogin(); return; }
+    const d = await r.json();
+    if (r.ok && d.success) {
+      toast(`Empresa ${nuevoEstado === 'activa' ? 'activada' : 'suspendida'} correctamente`, 'success');
+      empresasCache = [];
+      fetchAllEmpresas();
+    } else { toast(d.error || 'Error al cambiar estado', 'error'); }
+  } catch { toast('Error de conexión', 'error'); }
+  pendingToggleId = null;
+  pendingToggleEstado = null;
 });
 </script>
 </body>
