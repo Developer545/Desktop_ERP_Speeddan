@@ -155,43 +155,26 @@ router.post('/', requireAuth, async (req, res) => {
       ? new Date(req.body.fecha_vencimiento)
       : null
 
+  // ── Garantizar columna erp_username existe ────────────────
+  await pool.query(
+    `ALTER TABLE empresas ADD COLUMN IF NOT EXISTS erp_username VARCHAR(50)`
+  ).catch(err => console.warn('[empresas/create] alter table:', err.message))
+
   // ── Insertar empresa en BD ───────────────────────────────
   let empresa
   try {
-    // Intentar guardar erp_username (columna puede no existir aún)
-    let query, params
-    try {
-      // Primero intentar con erp_username
-      query = `INSERT INTO empresas
+    const { rows } = await pool.query(
+      `INSERT INTO empresas
          (nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
           max_usuarios, database_url, contacto_nombre, contacto_email,
           contacto_telefono, modulos, notas, erp_username)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-       RETURNING *`
-      params = [nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
+       RETURNING *`,
+      [nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
         max_usuarios, database_url, contacto_nombre, contacto_email,
         contacto_telefono, JSON.stringify(modulos), notas, erp_username]
-    } catch (_) {
-      // fallback sin erp_username
-      query = `INSERT INTO empresas
-         (nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
-          max_usuarios, database_url, contacto_nombre, contacto_email,
-          contacto_telefono, modulos, notas)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-       RETURNING *`
-      params = [nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
-        max_usuarios, database_url, contacto_nombre, contacto_email,
-        contacto_telefono, JSON.stringify(modulos), notas]
-    }
-    const { rows } = await pool.query(query, params)
+    )
     empresa = rows[0]
-    // Si la columna no existía, hacer UPDATE con erp_username
-    if (empresa && !empresa.erp_username && erp_username) {
-      // Intentar ALTER TABLE para agregar la columna y luego hacer UPDATE
-      await pool.query(`ALTER TABLE empresas ADD COLUMN IF NOT EXISTS erp_username VARCHAR(50)`).catch(() => { })
-      await pool.query(`UPDATE empresas SET erp_username = $1 WHERE id = $2`, [erp_username, empresa.id]).catch(() => { })
-      empresa.erp_username = erp_username
-    }
   } catch (err) {
     console.error('[empresas/create] insert:', err.message)
     return res.status(500).json({ error: 'Error al crear la empresa.' })
