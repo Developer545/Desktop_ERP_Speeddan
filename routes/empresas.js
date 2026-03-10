@@ -3,16 +3,16 @@
 // ══════════════════════════════════════════════════════════
 
 const express = require('express')
-const pool    = require('../db')
-const { requireAuth }                                   = require('../middleware/auth.middleware')
+const pool = require('../db')
+const { requireAuth } = require('../middleware/auth.middleware')
 const { sanitizeStr, sanitizeInt, isValidEmail, isValidSubdominio, addDays } = require('../utils/validators')
-const { sendWelcomeEmail }                              = require('../services/email.service')
-const { provisionEmisor }                               = require('../services/erp.service')
+const { sendWelcomeEmail } = require('../services/email.service')
+const { provisionEmisor } = require('../services/erp.service')
 
 const router = express.Router()
 
 // ── Constantes de dominio ─────────────────────────────────
-const PLANES_VALIDOS  = ['emprendedor', 'empresarial', 'corporativo_cloud', 'corporativo_local']
+const PLANES_VALIDOS = ['emprendedor', 'empresarial', 'corporativo_cloud', 'corporativo_local']
 const ESTADOS_VALIDOS = ['prueba', 'activa', 'suspendida', 'cancelada']
 
 /** Módulos habilitados según el plan */
@@ -45,8 +45,8 @@ const MODULOS_POR_PLAN = {
 
 /** Límite de usuarios por plan */
 const MAX_USUARIOS_POR_PLAN = {
-  emprendedor:       3,
-  empresarial:       10,
+  emprendedor: 3,
+  empresarial: 10,
   corporativo_cloud: 50,
   corporativo_local: 20,
 }
@@ -99,21 +99,21 @@ router.get('/', requireAuth, async (_req, res) => {
 // ══════════════════════════════════════════════════════════
 router.post('/', requireAuth, async (req, res) => {
   // ── Extraer y sanitizar campos ───────────────────────────
-  const nombre            = sanitizeStr(req.body.nombre)
-  const subdominio        = sanitizeStr(req.body.subdominio, 63)?.toLowerCase()
-  const nit               = sanitizeStr(req.body.nit, 20)
-  const plan              = sanitizeStr(req.body.plan, 30) || 'emprendedor'
-  const estado            = sanitizeStr(req.body.estado, 20) || 'prueba'
-  const dias_prueba       = sanitizeInt(req.body.dias_prueba, 1, 365) || 30
-  const max_usuarios      = sanitizeInt(req.body.max_usuarios, 1, 200) || MAX_USUARIOS_POR_PLAN[plan] || 3
-  const database_url      = sanitizeStr(req.body.database_url, 500)
-  const contacto_nombre   = sanitizeStr(req.body.contacto_nombre)
-  const contacto_email    = sanitizeStr(req.body.contacto_email, 150)
+  const nombre = sanitizeStr(req.body.nombre)
+  const subdominio = sanitizeStr(req.body.subdominio, 63)?.toLowerCase()
+  const nit = sanitizeStr(req.body.nit, 20)
+  const plan = sanitizeStr(req.body.plan, 30) || 'emprendedor'
+  const estado = sanitizeStr(req.body.estado, 20) || 'prueba'
+  const dias_prueba = sanitizeInt(req.body.dias_prueba, 1, 365) || 30
+  const max_usuarios = sanitizeInt(req.body.max_usuarios, 1, 200) || MAX_USUARIOS_POR_PLAN[plan] || 3
+  const database_url = sanitizeStr(req.body.database_url, 500)
+  const contacto_nombre = sanitizeStr(req.body.contacto_nombre)
+  const contacto_email = sanitizeStr(req.body.contacto_email, 150)
   const contacto_telefono = sanitizeStr(req.body.contacto_telefono, 30)
-  const notas             = sanitizeStr(req.body.notas, 1000)
+  const notas = sanitizeStr(req.body.notas, 1000)
   // Credenciales del primer usuario ERP
-  const erp_username      = sanitizeStr(req.body.erp_username, 50)
-  const erp_password      = sanitizeStr(req.body.erp_password, 128)
+  const erp_username = sanitizeStr(req.body.erp_username, 50)
+  const erp_password = sanitizeStr(req.body.erp_password, 128)
 
   // ── Validaciones ─────────────────────────────────────────
   if (!nombre)
@@ -158,18 +158,40 @@ router.post('/', requireAuth, async (req, res) => {
   // ── Insertar empresa en BD ───────────────────────────────
   let empresa
   try {
-    const { rows } = await pool.query(
-      `INSERT INTO empresas
+    // Intentar guardar erp_username (columna puede no existir aún)
+    let query, params
+    try {
+      // Primero intentar con erp_username
+      query = `INSERT INTO empresas
+         (nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
+          max_usuarios, database_url, contacto_nombre, contacto_email,
+          contacto_telefono, modulos, notas, erp_username)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+       RETURNING *`
+      params = [nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
+        max_usuarios, database_url, contacto_nombre, contacto_email,
+        contacto_telefono, JSON.stringify(modulos), notas, erp_username]
+    } catch (_) {
+      // fallback sin erp_username
+      query = `INSERT INTO empresas
          (nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
           max_usuarios, database_url, contacto_nombre, contacto_email,
           contacto_telefono, modulos, notas)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-       RETURNING *`,
-      [nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
-       max_usuarios, database_url, contacto_nombre, contacto_email,
-       contacto_telefono, JSON.stringify(modulos), notas]
-    )
+       RETURNING *`
+      params = [nombre, subdominio, nit, plan, estado, fecha_inicio, fecha_vencimiento,
+        max_usuarios, database_url, contacto_nombre, contacto_email,
+        contacto_telefono, JSON.stringify(modulos), notas]
+    }
+    const { rows } = await pool.query(query, params)
     empresa = rows[0]
+    // Si la columna no existía, hacer UPDATE con erp_username
+    if (empresa && !empresa.erp_username && erp_username) {
+      // Intentar ALTER TABLE para agregar la columna y luego hacer UPDATE
+      await pool.query(`ALTER TABLE empresas ADD COLUMN IF NOT EXISTS erp_username VARCHAR(50)`).catch(() => { })
+      await pool.query(`UPDATE empresas SET erp_username = $1 WHERE id = $2`, [erp_username, empresa.id]).catch(() => { })
+      empresa.erp_username = erp_username
+    }
   } catch (err) {
     console.error('[empresas/create] insert:', err.message)
     return res.status(500).json({ error: 'Error al crear la empresa.' })
@@ -178,13 +200,13 @@ router.post('/', requireAuth, async (req, res) => {
   // ── Provisionar Emisor en ERP (no bloquea la respuesta si falla) ──
   const provisionResult = await provisionEmisor({
     empresa_nombre: nombre,
-    empresa_nit:    nit,
+    empresa_nit: nit,
     subdominio,
-    username:       erp_username,
-    password:       erp_password,
+    username: erp_username,
+    password: erp_password,
     plan,
     modulos,
-    database_url:   database_url || null,
+    database_url: database_url || null,
   })
 
   if (provisionResult.success && provisionResult.emisorId) {
@@ -207,10 +229,10 @@ router.post('/', requireAuth, async (req, res) => {
     success: true,
     data: empresa,
     provisioning: {
-      erp:   provisionResult.success,
+      erp: provisionResult.success,
       email: emailResult.sent,
-      ...(!provisionResult.success && { erp_error:   provisionResult.reason }),
-      ...(!emailResult.sent         && { email_error: emailResult.reason }),
+      ...(!provisionResult.success && { erp_error: provisionResult.reason }),
+      ...(!emailResult.sent && { email_error: emailResult.reason }),
     },
   })
 })
@@ -231,16 +253,16 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const empresa = current[0]
 
     // Extraer sólo los campos enviados
-    const nombre            = req.body.nombre            !== undefined ? sanitizeStr(req.body.nombre)               : empresa.nombre
-    const nit               = req.body.nit               !== undefined ? sanitizeStr(req.body.nit, 20)               : empresa.nit
-    const plan              = req.body.plan              !== undefined ? sanitizeStr(req.body.plan, 30)              : empresa.plan
-    const estado            = req.body.estado            !== undefined ? sanitizeStr(req.body.estado, 20)            : empresa.estado
-    const max_usuarios      = req.body.max_usuarios      !== undefined ? sanitizeInt(req.body.max_usuarios, 1, 200)  : empresa.max_usuarios
-    const database_url      = req.body.database_url      !== undefined ? sanitizeStr(req.body.database_url, 500)    : empresa.database_url
-    const contacto_nombre   = req.body.contacto_nombre   !== undefined ? sanitizeStr(req.body.contacto_nombre)      : empresa.contacto_nombre
-    const contacto_email    = req.body.contacto_email    !== undefined ? sanitizeStr(req.body.contacto_email, 150)  : empresa.contacto_email
-    const contacto_telefono = req.body.contacto_telefono !== undefined ? sanitizeStr(req.body.contacto_telefono, 30): empresa.contacto_telefono
-    const notas             = req.body.notas             !== undefined ? sanitizeStr(req.body.notas, 1000)           : empresa.notas
+    const nombre = req.body.nombre !== undefined ? sanitizeStr(req.body.nombre) : empresa.nombre
+    const nit = req.body.nit !== undefined ? sanitizeStr(req.body.nit, 20) : empresa.nit
+    const plan = req.body.plan !== undefined ? sanitizeStr(req.body.plan, 30) : empresa.plan
+    const estado = req.body.estado !== undefined ? sanitizeStr(req.body.estado, 20) : empresa.estado
+    const max_usuarios = req.body.max_usuarios !== undefined ? sanitizeInt(req.body.max_usuarios, 1, 200) : empresa.max_usuarios
+    const database_url = req.body.database_url !== undefined ? sanitizeStr(req.body.database_url, 500) : empresa.database_url
+    const contacto_nombre = req.body.contacto_nombre !== undefined ? sanitizeStr(req.body.contacto_nombre) : empresa.contacto_nombre
+    const contacto_email = req.body.contacto_email !== undefined ? sanitizeStr(req.body.contacto_email, 150) : empresa.contacto_email
+    const contacto_telefono = req.body.contacto_telefono !== undefined ? sanitizeStr(req.body.contacto_telefono, 30) : empresa.contacto_telefono
+    const notas = req.body.notas !== undefined ? sanitizeStr(req.body.notas, 1000) : empresa.notas
 
     let fecha_vencimiento = empresa.fecha_vencimiento
     if (req.body.fecha_vencimiento !== undefined) {
@@ -278,8 +300,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
        WHERE id = $13
        RETURNING *`,
       [nombre, nit, plan, estado, fecha_vencimiento, max_usuarios, database_url,
-       contacto_nombre, contacto_email, contacto_telefono,
-       JSON.stringify(modulos), notas, id]
+        contacto_nombre, contacto_email, contacto_telefono,
+        JSON.stringify(modulos), notas, id]
     )
 
     res.json({ success: true, data: updated[0] })
@@ -363,15 +385,15 @@ router.post('/check', async (req, res) => {
 
     // Todo OK
     res.json({
-      valido:            true,
-      empresaId:         empresa.id,
-      nombre:            empresa.nombre,
-      plan:              empresa.plan,
-      estado:            empresa.estado,
-      fechaVencimiento:  empresa.fecha_vencimiento,
-      maxUsuarios:       empresa.max_usuarios,
-      modulos:           empresa.modulos,
-      databaseUrl:       empresa.database_url || null,
+      valido: true,
+      empresaId: empresa.id,
+      nombre: empresa.nombre,
+      plan: empresa.plan,
+      estado: empresa.estado,
+      fechaVencimiento: empresa.fecha_vencimiento,
+      maxUsuarios: empresa.max_usuarios,
+      modulos: empresa.modulos,
+      databaseUrl: empresa.database_url || null,
     })
   } catch (err) {
     console.error('[empresas/check]', err.message)
