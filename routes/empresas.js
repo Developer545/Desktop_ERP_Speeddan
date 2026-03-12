@@ -384,4 +384,24 @@ router.post('/check', async (req, res) => {
   }
 })
 
+// ══════════════════════════════════════════════════════════
+// DELETE /api/empresas/:id — Borrado lógico (soft delete)
+// ══════════════════════════════════════════════════════════
+router.delete('/:id', requireAuth, async (req, res) => {
+  const { id } = req.params
+  try {
+    const { rowCount } = await pool.query(
+      'UPDATE empresas SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL',
+      [id]
+    )
+    if (rowCount === 0) {
+      return res.status(404).json({ error: 'Empresa no encontrada o ya eliminada' })
+    }
+    res.json({ success: true, message: 'Empresa eliminada correctamente' })
+  } catch (err) {
+    console.error('[empresas/delete]', err.message)
+    res.status(500).json({ error: 'Error al eliminar la empresa' })
+  }
+})
+
 module.exports = router

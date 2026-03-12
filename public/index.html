@@ -1677,6 +1677,28 @@
     </main>
   </div>
 
+  <!-- Modal ELIMINAR EMPRESA -->
+  <div class="login-overlay hidden" id="deleteEmpresaModal">
+    <div class="login-box" style="text-align:center;">
+      <div
+        style="width:48px;height:48px;border-radius:50%;background:rgba(248,81,73,.1);color:var(--danger);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg>
+      </div>
+      <h3 style="margin-bottom:8px;font-size:16px;">Eliminar Empresa Web</h3>
+      <p class="text-sec" style="font-size:13px;margin-bottom:20px;">
+        ¿Estás seguro de eliminar <strong id="deleteEmpresaNombre" style="color:var(--text)"></strong>?<br>
+        Esta acción solo ocultará la empresa visualmente (soft delete).
+      </p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-ghost" onclick="closeModal('deleteEmpresaModal')">Cancelar</button>
+        <button class="btn btn-danger" id="confirmDeleteEmpresaBtn">Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ─── UTILS ─────────────────────────────────────── */
     const ICONS = {
@@ -2107,7 +2129,7 @@
     }
 
     /* ─── CERRAR MODALES AL HACER CLIC FUERA ─────────── */
-    ['revokeModal', 'extendModal', 'changePassModal', 'editEmpresaModal', 'toggleEstadoModal'].forEach(id => {
+    ['revokeModal', 'extendModal', 'changePassModal', 'editEmpresaModal', 'toggleEstadoModal', 'deleteEmpresaModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', e => {
         if (e.target === e.currentTarget) closeModal(id);
       });
@@ -2259,6 +2281,12 @@
             Editar
           </button>
           ${toggleBtn}
+          <button class="btn btn-ghost btn-sm" onclick="openDeleteEmpresaModal(${e.id}, '${escHtml(e.nombre)}')" style="color:var(--danger); border-color:transparent;" title="Eliminar empresa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
         </div>
       </td>
     </tr>`;
