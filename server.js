@@ -26,14 +26,10 @@ const CORS_ORIGINS = process.env.CORS_ORIGINS
 // ── App Express ───────────────────────────────────────────
 const app = express()
 
+app.set('trust proxy', 1) // Necesario para Vercel y express-rate-limit
+
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true)
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true)
-    if (/\.vercel\.app$/.test(origin)) return cb(null, true)
-    if (CORS_ORIGINS.includes(origin)) return cb(null, true)
-    return cb(new Error('Origen no permitido por CORS: ' + origin))
-  },
+  origin: true, // Permitir cualquier origen temporalmente para resolver el bloqueo
   credentials: true,
 }))
 app.use(express.json({ limit: '1mb' }))
