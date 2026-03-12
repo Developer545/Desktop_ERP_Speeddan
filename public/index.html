@@ -2454,6 +2454,43 @@
       pendingToggleId = null;
       pendingToggleEstado = null;
     });
+
+    /* ─── ELIMINAR EMPRESA ───────────────────────────── */
+    let pendingDeleteEmpresaId = null;
+
+    function openDeleteEmpresaModal(id, nombre) {
+      pendingDeleteEmpresaId = id;
+      document.getElementById('deleteEmpresaNombre').textContent = nombre;
+      document.getElementById('deleteEmpresaModal').classList.remove('hidden');
+    }
+
+    document.getElementById('confirmDeleteEmpresaBtn').addEventListener('click', async () => {
+      if (!pendingDeleteEmpresaId) return;
+      const id = pendingDeleteEmpresaId;
+      const btn = document.getElementById('confirmDeleteEmpresaBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>...';
+
+      try {
+        const r = await fetch(`/api/empresas/${id}`, { method: 'DELETE' });
+        if (r.status === 401) { showLogin(); return; }
+        if (r.ok) {
+          toast('Empresa eliminada correctamente', 'success');
+          fetchAllEmpresas();
+        } else {
+          const d = await r.json();
+          toast(d.error || 'Error al eliminar', 'error');
+        }
+      } catch {
+        toast('Error de conexión', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sí, Eliminar';
+        closeModal('deleteEmpresaModal');
+        pendingDeleteEmpresaId = null;
+      }
+    });
   </script>
 </body>
 
