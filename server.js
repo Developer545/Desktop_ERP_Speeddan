@@ -6,11 +6,11 @@
 const path = require('path')
 require('dotenv').config({ path: path.resolve(__dirname, '.env') })
 
-const express    = require('express')
-const cors       = require('cors')
-const rateLimit  = require('express-rate-limit')
+const express = require('express')
+const cors = require('cors')
+const rateLimit = require('express-rate-limit')
 const cookieParser = require('cookie-parser')
-const pool       = require('./db')
+const pool = require('./db')
 
 // ── Validar variables de entorno críticas ─────────────────
 if (!process.env.JWT_SECRET) {
@@ -30,8 +30,9 @@ app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true)
     if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true)
+    if (/\.vercel\.app$/.test(origin)) return cb(null, true)
     if (CORS_ORIGINS.includes(origin)) return cb(null, true)
-    return cb(new Error('Origen no permitido por CORS'))
+    return cb(new Error('Origen no permitido por CORS: ' + origin))
   },
   credentials: true,
 }))
@@ -49,9 +50,9 @@ app.use('/api/', rateLimit({
 }))
 
 // ── Rutas ─────────────────────────────────────────────────
-app.use('/api/auth',      require('./routes/auth'))
-app.use('/api/licenses',  require('./routes/licencias'))
-app.use('/api/empresas',  require('./routes/empresas'))
+app.use('/api/auth', require('./routes/auth'))
+app.use('/api/licenses', require('./routes/licencias'))
+app.use('/api/empresas', require('./routes/empresas'))
 
 // ── Health Check ──────────────────────────────────────────
 app.get('/api/health', async (_req, res) => {
