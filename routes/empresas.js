@@ -7,7 +7,7 @@ const pool = require('../db')
 const { requireAuth } = require('../middleware/auth.middleware')
 const { sanitizeStr, sanitizeInt, isValidEmail, isValidSubdominio, addDays } = require('../utils/validators')
 const { sendWelcomeEmail } = require('../services/email.service')
-const { provisionEmisor } = require('../services/erp.service')
+const { provisionEmisor, deleteEmisor } = require('../services/erp.service')
 
 const router = express.Router()
 
@@ -295,6 +295,63 @@ router.patch('/:id', requireAuth, async (req, res) => {
 })
 
 // ══════════════════════════════════════════════════════════
+// POST /api/empresas/:id/provision — Re-sincronizar ERP
+// Llama a provision-internal para empresas ya creadas
+// ══════════════════════════════════════════════════════════
+router.post('/:id/provision', requireAuth, async (req, res) => {
+  const id = sanitizeInt(req.params.id, 1, 2147483647)
+  if (!id) return res.status(400).json({ error: 'ID de empresa inválido.' })
+
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM empresas WHERE id = $1 AND deleted_at IS NULL', [id]
+    )
+    const empresa = rows[0]
+    if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada.' })
+
+    // Obtener erp_username si existe
+    const erp_username = empresa.erp_username || null
+    const erp_password = req.body.erp_password || null
+
+    if (!erp_username) {
+      return res.status(400).json({ error: 'Esta empresa no tiene usuario ERP registrado. Recréala con usuario y contraseña.' })
+    }
+    if (!erp_password) {
+      return res.status(400).json({ error: 'Debes enviar la contraseña ERP para re-sincronizar.' })
+    }
+
+    const modulos = MODULOS_POR_PLAN[empresa.plan] || MODULOS_POR_PLAN.emprendedor
+
+    const provisionResult = await provisionEmisor({
+      empresa_nombre: empresa.nombre,
+      empresa_nit: empresa.nit,
+      subdominio: empresa.subdominio,
+      username: erp_username,
+      password: erp_password,
+      plan: empresa.plan,
+      modulos,
+      database_url: empresa.database_url || null,
+    })
+
+    if (provisionResult.success && provisionResult.emisorId) {
+      await pool.query(
+        'UPDATE empresas SET emisor_id = $1 WHERE id = $2',
+        [provisionResult.emisorId, id]
+      ).catch(err => console.error('[empresas/provision] update emisor_id:', err.message))
+    }
+
+    res.json({
+      success: provisionResult.success,
+      emisorId: provisionResult.emisorId,
+      ...(!provisionResult.success && { error: provisionResult.reason }),
+    })
+  } catch (err) {
+    console.error('[empresas/provision]', err.message)
+    res.status(500).json({ error: 'Error al re-provisionar la empresa.' })
+  }
+})
+
+// ══════════════════════════════════════════════════════════
 // DELETE /api/empresas/:id — Soft delete
 // ══════════════════════════════════════════════════════════
 router.delete('/:id', requireAuth, async (req, res) => {
@@ -390,13 +447,38 @@ router.post('/check', async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   const { id } = req.params
   try {
+    // 1. Obtener datos de la empresa (necesitamos el subdominio para borrar el ERP)
+    const { rows: empresaRows } = await pool.query(
+      'SELECT subdominio FROM empresas WHERE id = $1 AND deleted_at IS NULL',
+      [id]
+    )
+
+    if (empresaRows.length === 0) {
+      return res.status(404).json({ error: 'Empresa no encontrada o ya eliminada' })
+    }
+
+    const { subdominio } = empresaRows[0]
+
+    // 2. Intentar destruir el Emisor (y sus usuarios) en el Backend del ERP
+    if (subdominio) {
+      const erpResult = await deleteEmisor(subdominio)
+      if (!erpResult.success) {
+        console.warn(`[empresas/delete] No se pudo borrar el emisor '${subdominio}' en el ERP. Motivo:`, erpResult.reason)
+        // Decidimos no retornar error 500 aquí para no bloquear el borrado en el panel,
+        // pero quedará constancia en el log.
+      }
+    }
+
+    // 3. Borrado lógico en el Panel
     const { rowCount } = await pool.query(
       'UPDATE empresas SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL',
       [id]
     )
+
     if (rowCount === 0) {
-      return res.status(404).json({ error: 'Empresa no encontrada o ya eliminada' })
+      return res.status(404).json({ error: 'Error al marcar la empresa como eliminada' }) // poco probable por el check(1)
     }
+
     res.json({ success: true, message: 'Empresa eliminada correctamente' })
   } catch (err) {
     console.error('[empresas/delete]', err.message)

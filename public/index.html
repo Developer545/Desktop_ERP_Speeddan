@@ -1678,6 +1678,32 @@
   </div>
 
   <!-- Modal ELIMINAR EMPRESA -->
+  <!-- Modal Sincronizar ERP -->
+  <div class="login-overlay hidden" id="syncErpModal">
+    <div class="login-box" style="max-width:420px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:rgba(22,119,255,.1);color:var(--primary);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </div>
+      <h3 style="margin-bottom:4px;font-size:16px;text-align:center;">Sincronizar empresa con ERP</h3>
+      <p class="text-sec" style="font-size:12px;text-align:center;margin-bottom:18px;">
+        Esto creará (o actualizará) el usuario <strong id="syncErpNombreEmpresa"></strong> en la base de datos del ERP.
+      </p>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:12px;color:var(--text-sec);display:block;margin-bottom:5px;">Usuario ERP</label>
+        <input id="syncErpUsername" type="text" class="input" readonly style="background:var(--card-bg);opacity:0.7;" />
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="font-size:12px;color:var(--text-sec);display:block;margin-bottom:5px;">Contraseña ERP <span style="color:var(--danger)">*</span></label>
+        <input id="syncErpPassword" type="password" class="input" placeholder="Contraseña del usuario ERP" autocomplete="new-password" />
+        <div style="font-size:11px;color:var(--text-sec);margin-top:4px;">La misma contraseña que le asignaste al crear la empresa.</div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-ghost" onclick="closeModal('syncErpModal')">Cancelar</button>
+        <button class="btn btn-primary" id="confirmSyncErpBtn">Sincronizar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="login-overlay hidden" id="deleteEmpresaModal">
     <div class="login-box" style="text-align:center;">
       <div
@@ -2129,7 +2155,7 @@
     }
 
     /* ─── CERRAR MODALES AL HACER CLIC FUERA ─────────── */
-    ['revokeModal', 'extendModal', 'changePassModal', 'editEmpresaModal', 'toggleEstadoModal', 'deleteEmpresaModal'].forEach(id => {
+    ['revokeModal', 'extendModal', 'changePassModal', 'editEmpresaModal', 'toggleEstadoModal', 'deleteEmpresaModal', 'syncErpModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', e => {
         if (e.target === e.currentTarget) closeModal(id);
       });
@@ -2281,6 +2307,10 @@
             Editar
           </button>
           ${toggleBtn}
+          <button class="btn btn-ghost btn-sm" onclick="openSyncErpModal(${e.id}, '${escHtml(e.nombre)}', '${escHtml(e.erp_username || '')}')" style="color:var(--primary);" title="${e.emisor_id ? 'Re-sincronizar con ERP' : '⚠ No sincronizado — click para provisionar'}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:3px;vertical-align:middle;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            ${e.emisor_id ? 'Sync' : '⚠ Sync'}
+          </button>
           <button class="btn btn-ghost btn-sm" onclick="openDeleteEmpresaModal(${e.id}, '${escHtml(e.nombre)}')" style="color:var(--danger); border-color:transparent;" title="Eliminar empresa">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6" />
@@ -2453,6 +2483,51 @@
       } catch { toast('Error de conexión', 'error'); }
       pendingToggleId = null;
       pendingToggleEstado = null;
+    });
+
+    /* ─── SINCRONIZAR ERP ───────────────────────────── */
+    let pendingSyncErpId = null;
+
+    function openSyncErpModal(id, nombre, erpUsername) {
+      pendingSyncErpId = id;
+      document.getElementById('syncErpNombreEmpresa').textContent = nombre;
+      document.getElementById('syncErpUsername').value = erpUsername || '';
+      document.getElementById('syncErpPassword').value = '';
+      document.getElementById('syncErpModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('syncErpPassword').focus(), 100);
+    }
+
+    document.getElementById('confirmSyncErpBtn').addEventListener('click', async () => {
+      if (!pendingSyncErpId) return;
+      const password = document.getElementById('syncErpPassword').value.trim();
+      if (!password) { toast('Ingresa la contraseña ERP', 'error'); return; }
+
+      const btn = document.getElementById('confirmSyncErpBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Sincronizando...';
+
+      try {
+        const r = await fetch(`/api/empresas/${pendingSyncErpId}/provision`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ erp_password: password }),
+        });
+        if (r.status === 401) { showLogin(); return; }
+        const d = await r.json();
+        if (r.ok && d.success) {
+          toast('✓ Empresa sincronizada con el ERP correctamente', 'success');
+          fetchAllEmpresas();
+          closeModal('syncErpModal');
+        } else {
+          toast(d.error || 'Error al sincronizar con el ERP', 'error');
+        }
+      } catch {
+        toast('Error de conexión con el servidor', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sincronizar';
+        pendingSyncErpId = null;
+      }
     });
 
     /* ─── ELIMINAR EMPRESA ───────────────────────────── */
