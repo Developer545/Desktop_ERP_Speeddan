@@ -2,8 +2,8 @@
 // SERVICE — Comunicación con el API del ERP (Online_ERP)
 // ══════════════════════════════════════════════════════════
 
-const ERP_API_URL    = process.env.ERP_API_URL
-const INTERNAL_KEY   = process.env.INTERNAL_API_KEY
+const ERP_API_URL = process.env.ERP_API_URL
+const INTERNAL_KEY = process.env.INTERNAL_API_KEY
 
 /**
  * Llama al endpoint interno del ERP para crear Emisor + primer usuario admin.
@@ -58,4 +58,40 @@ async function provisionEmisor(data) {
   }
 }
 
-module.exports = { provisionEmisor }
+/**
+ * Llama al endpoint interno del ERP para eliminar por completo Emisor + usuarios
+ * asociados a ese subdominio.
+ *
+ * @param {string} subdominio
+ * @returns {Promise<{ success: boolean, reason?: string }>}
+ */
+async function deleteEmisor(subdominio) {
+  if (!ERP_API_URL || !INTERNAL_KEY || !subdominio) {
+    return { success: false, reason: 'Configuración o subdominio faltante' }
+  }
+
+  try {
+    const response = await fetch(`${ERP_API_URL}/api/seguridad/provision-internal/${subdominio}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Internal-Key': INTERNAL_KEY,
+      },
+      signal: AbortSignal.timeout(10_000),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      console.error('[erp] Error al eliminar emisor en ERP:', result)
+      return { success: false, reason: result.error || `HTTP ${response.status}` }
+    }
+
+    console.log(`[erp] Emisor ${subdominio} depurado correctamente del ERP`)
+    return { success: true }
+  } catch (err) {
+    console.error('[erp] Error de conexión al eliminar emisor:', err.message)
+    return { success: false, reason: err.message }
+  }
+}
+
+module.exports = { provisionEmisor, deleteEmisor }
